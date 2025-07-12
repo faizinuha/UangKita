@@ -99,21 +99,64 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-2 gap-4 mt-6">
           <button
             onClick={() => onNavigate('payment')}
-            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 hover:bg-opacity-30 transition-all"
+            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4 hover:bg-opacity-30 transition-all"
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">📷</div>
-              <div className="text-sm font-medium">Scan & Bayar</div>
+              <div className="w-8 h-8 mx-auto mb-2 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                <span className="text-lg">📷</span>
+              </div>
+              <div className="text-xs font-medium">Scan & Bayar</div>
             </div>
           </button>
           
           <button
             onClick={() => onNavigate('transfer')}
-            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 hover:bg-opacity-30 transition-all"
+            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4 hover:bg-opacity-30 transition-all"
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">👥</div>
-              <div className="text-sm font-medium">Transfer Keluarga</div>
+              <div className="w-8 h-8 mx-auto mb-2 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                <span className="text-lg">👥</span>
+              </div>
+              <div className="text-xs font-medium">Transfer</div>
+            </div>
+          </button>
+        </div>
+        
+        {/* Dana Style Quick Actions - 3 kotak */}
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          <button
+            onClick={() => onNavigate('topup')}
+            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-3 hover:bg-opacity-30 transition-all"
+          >
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-2 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                <span className="text-lg">💰</span>
+              </div>
+              <div className="text-xs font-medium">Top Up</div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => onNavigate('transactions')}
+            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-3 hover:bg-opacity-30 transition-all"
+          >
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-2 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                <span className="text-lg">📊</span>
+              </div>
+              <div className="text-xs font-medium">Riwayat</div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => onNavigate('members')}
+            className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-3 hover:bg-opacity-30 transition-all"
+          >
+            <div className="text-center">
+              <div className="w-8 h-8 mx-auto mb-2 bg-white bg-opacity-30 rounded-lg flex items-center justify-center">
+                <span className="text-lg">👨‍👩‍👧‍👦</span>
+              </div>
+              <div className="text-xs font-medium">Anggota</div>
             </div>
           </button>
         </div>

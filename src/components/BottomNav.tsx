@@ -9,7 +9,7 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onNavigate }) => {
   const navItems = [
     { id: 'dashboard', label: 'Beranda', icon: Home },
-    { id: 'payment', label: 'Scan & Bayar', icon: CreditCard },
+    { id: 'payment', label: 'Bayar', icon: CreditCard },
     { id: 'transactions', label: 'Riwayat', icon: BarChart3 },
     { id: 'members', label: 'Anggota', icon: Users },
     { id: 'settings', label: 'Pengaturan', icon: Settings }

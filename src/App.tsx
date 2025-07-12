@@ -6,6 +6,7 @@ import { PaymentForm } from './components/PaymentForm';
 import { TransactionHistory } from './components/TransactionHistory';
 import { FamilyMembers } from './components/FamilyMembers';
 import { Settings } from './components/Settings';
+import { TopUpForm } from './components/TopUpForm';
 import { BottomNav } from './components/BottomNav';
 
 function App() {
@@ -41,6 +42,8 @@ function App() {
         return <FamilyMembers onBack={() => setCurrentPage('dashboard')} />;
       case 'settings':
         return <Settings onBack={() => setCurrentPage('dashboard')} />;
+      case 'topup':
+        return <TopUpForm onBack={() => setCurrentPage('dashboard')} />;
       default:
         return <Dashboard onNavigate={setCurrentPage} />;
     }
