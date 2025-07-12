@@ -32,9 +32,9 @@ function App() {
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentPage} />;
       case 'payment':
-        return <PaymentForm onBack={() => setCurrentPage('dashboard')} />;
+        return <PaymentForm onBack={() => setCurrentPage('dashboard')} mode="payment" />;
       case 'transfer':
-        return <PaymentForm onBack={() => setCurrentPage('dashboard')} />;
+        return <PaymentForm onBack={() => setCurrentPage('dashboard')} mode="transfer" />;
       case 'transactions':
         return <TransactionHistory onBack={() => setCurrentPage('dashboard')} />;
       case 'members':

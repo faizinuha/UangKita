@@ -68,8 +68,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 hover:bg-opacity-30 transition-all"
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">💳</div>
-              <div className="text-sm font-medium">Bayar</div>
+              <div className="text-2xl mb-2">📷</div>
+              <div className="text-sm font-medium">Scan & Bayar</div>
             </div>
           </button>
           
@@ -78,8 +78,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 hover:bg-opacity-30 transition-all"
           >
             <div className="text-center">
-              <div className="text-2xl mb-2">💸</div>
-              <div className="text-sm font-medium">Transfer</div>
+              <div className="text-2xl mb-2">👥</div>
+              <div className="text-sm font-medium">Transfer Keluarga</div>
             </div>
           </button>
         </div>
