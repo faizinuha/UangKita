@@ -1,6 +1,7 @@
 # UangKita - Family Wallet Application
 
-![UangKita Logo](https://via.placeholder.com/200x80/4F46E5/FFFFFF?text=UangKita)
+<img src="./dist/assets/img/image.png" style="width: 200px;">
+
 
 **UangKita** adalah aplikasi dompet digital keluarga yang memungkinkan pengelolaan keuangan keluarga secara terpusat dengan fitur pembayaran QR, transfer antar anggota, dan integrasi dengan Dana.
 
