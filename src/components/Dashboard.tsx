@@ -43,7 +43,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Balance Card */}
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white space-y-6">
         <div className="flex justify-between items-start mb-4">
           <div>
             <p className="text-blue-100 text-sm">Saldo Keluarga</p>
@@ -61,6 +61,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
           <Wallet className="text-blue-200" size={32} />
         </div>
+        
+        {/* Dana Balance Section */}
+        {wallet?.danaIntegration?.isConnected && (
+          <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <Smartphone className="text-blue-100" size={16} />
+                  <p className="text-blue-100 text-sm">Saldo Dana</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-xl font-bold">
+                    {showBalance ? formatCurrency(wallet.danaIntegration.balance) : 'Rp ••••••'}
+                  </h3>
+                  <button
+                    onClick={() => setShowBalance(!showBalance)}
+                    className="text-blue-100 hover:text-white transition-colors"
+                  >
+                    {showBalance ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <p className="text-blue-200 text-xs mt-1">
+                  {wallet.danaIntegration.phoneNumber}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDanaIntegration(true)}
+                className="text-blue-100 hover:text-white transition-colors"
+              >
+                <Settings size={16} />
+              </button>
+            </div>
+          </div>
+        )}
         
         <div className="grid grid-cols-2 gap-4 mt-6">
           <button
@@ -86,7 +120,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Dana Integration Card */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      {!wallet?.danaIntegration?.isConnected && (
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -101,40 +136,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             onClick={() => setShowDanaIntegration(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
           >
-            {wallet?.danaIntegration?.isConnected ? (
-              <>
-                <Eye size={16} />
-                <span>Lihat</span>
-              </>
-            ) : (
-              <>
-                <Plus size={16} />
-                <span>Hubungkan</span>
-              </>
-            )}
+            <Plus size={16} />
+            <span>Hubungkan</span>
           </button>
         </div>
         
-        {wallet?.danaIntegration?.isConnected ? (
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-900 font-medium">Terhubung ke Dana</p>
-                <p className="text-blue-700 text-sm">{wallet.danaIntegration.phoneNumber}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-blue-900 font-bold">{formatCurrency(wallet.danaIntegration.balance)}</p>
-                <p className="text-blue-700 text-xs">Saldo Dana</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-gray-600 text-sm">Belum terhubung ke Dana</p>
-            <p className="text-gray-500 text-xs mt-1">Klik "Hubungkan" untuk mulai sinkronisasi</p>
-          </div>
-        )}
-      </div>
+        <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <p className="text-gray-600 text-sm">Belum terhubung ke Dana</p>
+          <p className="text-gray-500 text-xs mt-1">Klik "Hubungkan" untuk mulai sinkronisasi</p>
+        </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
