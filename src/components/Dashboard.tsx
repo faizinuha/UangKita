@@ -22,7 +22,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     new Date(t.timestamp).toDateString() === new Date().toDateString()
   );
 
-  const dailySpentPercentage = currentMember 
+  const dailySpentPercentage = currentMember && currentMember.role !== 'admin'
     ? (currentMember.currentDailySpent / currentMember.dailyLimit) * 100
     : 0;
 
@@ -201,18 +201,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <span className="text-sm text-gray-500">Hari ini</span>
           </div>
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-gray-900">
-              {formatCurrency(currentMember?.currentDailySpent || 0)}
-            </h3>
-            <p className="text-sm text-gray-600">
-              dari limit {formatCurrency(currentMember?.dailyLimit || 0)}
-            </p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(dailySpentPercentage, 100)}%` }}
-              />
-            </div>
+            {currentMember?.role === 'admin' ? (
+              <>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(currentMember?.currentDailySpent || 0)}
+                </h3>
+                <p className="text-sm text-gray-600">Pengeluaran hari ini</p>
+                <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium inline-block">
+                  👑 Admin - Tanpa Limit
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(currentMember?.currentDailySpent || 0)}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  dari limit {formatCurrency(currentMember?.dailyLimit || 0)}
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(dailySpentPercentage, 100)}%` }}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 

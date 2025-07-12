@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { useAuth } from '../hooks/useAuth';
 import { formatCurrency } from '../utils/formatters';
-import { ArrowLeft, CreditCard, Building, Smartphone, QrCode, Copy, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, Building, Smartphone, QrCode, Copy, CheckCircle, Clock, Receipt } from 'lucide-react';
 
 interface TopUpFormProps {
   onBack: () => void;
@@ -14,46 +14,105 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
   const [selectedMethod, setSelectedMethod] = useState('');
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
-  const [showBarcode, setShowBarcode] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [showPaymentPage, setShowPaymentPage] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [barcodeData, setBarcodeData] = useState('');
   const [copied, setCopied] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
 
   const quickAmounts = [50000, 100000, 200000, 500000, 1000000, 2000000];
   
   const topupMethods = [
     {
-      id: 'bank_transfer',
-      name: 'Transfer Bank',
+      id: 'bca',
+      name: 'BCA',
       icon: Building,
-      description: 'BCA, Mandiri, BRI, BNI',
-      fee: 0
+      description: 'Transfer Bank BCA',
+      fee: 0,
+      color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      id: 'mandiri',
+      name: 'Mandiri',
+      icon: Building,
+      description: 'Transfer Bank Mandiri',
+      fee: 0,
+      color: 'bg-yellow-100 text-yellow-600'
+    },
+    {
+      id: 'bri',
+      name: 'BRI',
+      icon: Building,
+      description: 'Transfer Bank BRI',
+      fee: 0,
+      color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      id: 'bni',
+      name: 'BNI',
+      icon: Building,
+      description: 'Transfer Bank BNI',
+      fee: 0,
+      color: 'bg-orange-100 text-orange-600'
     },
     {
       id: 'dana',
       name: 'Dana',
       icon: Smartphone,
       description: 'Langsung dari Dana',
-      fee: 0
+      fee: 0,
+      color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      id: 'ovo',
+      name: 'OVO',
+      icon: Smartphone,
+      description: 'Transfer dari OVO',
+      fee: 0,
+      color: 'bg-purple-100 text-purple-600'
+    },
+    {
+      id: 'gopay',
+      name: 'GoPay',
+      icon: Smartphone,
+      description: 'Transfer dari GoPay',
+      fee: 0,
+      color: 'bg-green-100 text-green-600'
+    },
+    {
+      id: 'shopeepay',
+      name: 'ShopeePay',
+      icon: Smartphone,
+      description: 'Transfer dari ShopeePay',
+      fee: 0,
+      color: 'bg-orange-100 text-orange-600'
     },
     {
       id: 'credit_card',
       name: 'Kartu Kredit',
       icon: CreditCard,
       description: 'Visa, Mastercard',
-      fee: 2500
+      fee: 2500,
+      color: 'bg-gray-100 text-gray-600'
+    },
+    {
+      id: 'debit_card',
+      name: 'Kartu Debit',
+      icon: CreditCard,
+      description: 'Debit semua bank',
+      fee: 1500,
+      color: 'bg-green-100 text-green-600'
     }
   ];
 
-  const generateBarcode = (method: string, amount: number) => {
-    // Generate barcode data untuk top up
+  const generatePayment = (method: string, amount: number) => {
     const timestamp = Date.now();
-    const barcodeId = `TOPUP${timestamp}`;
+    const txId = `TOPUP${timestamp}`;
     const data = {
       type: 'topup',
       amount: amount,
       method: method,
-      id: barcodeId,
+      id: txId,
       userId: currentUser?.id,
       familyId: wallet?.id,
       timestamp: timestamp
@@ -61,7 +120,9 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
     
     const barcodeString = btoa(JSON.stringify(data));
     setBarcodeData(barcodeString);
-    setShowBarcode(true);
+    setTransactionId(txId);
+    setPaymentStatus('pending');
+    setShowPaymentPage(true);
   };
 
   const handleAmountSelect = (selectedAmount: number) => {
@@ -76,9 +137,11 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
 
   const handleMethodSelect = (methodId: string) => {
     setSelectedMethod(methodId);
-    
-    if (amount && parseFloat(amount) > 0) {
-      generateBarcode(methodId, parseFloat(amount));
+  };
+
+  const handleGeneratePayment = () => {
+    if (amount && selectedMethod && parseFloat(amount) >= 10000) {
+      generatePayment(selectedMethod, parseFloat(amount));
     }
   };
 
@@ -88,49 +151,216 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleTopUp = async () => {
-    if (!currentUser || !wallet || !amount || !selectedMethod) return;
-
-    const topupAmount = parseFloat(amount);
-    if (topupAmount <= 0) return;
-
-    const method = topupMethods.find(m => m.id === selectedMethod);
-    const totalAmount = topupAmount + (method?.fee || 0);
-
-    setIsProcessing(true);
-
-    try {
-      // Simulasi proses top up
-      await new Promise(resolve => setTimeout(resolve, 3000));
+  const simulatePayment = async () => {
+    setPaymentStatus('pending');
+    
+    // Simulasi proses pembayaran
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Random success/failure untuk demo
+    const isSuccess = Math.random() > 0.1; // 90% success rate
+    
+    if (isSuccess) {
+      setPaymentStatus('success');
       
-      addTransaction({
-        fromMemberId: currentUser.id,
-        amount: -topupAmount, // Negative karena ini menambah saldo
-        type: 'topup',
-        category: 'Top Up',
-        description: `Top Up via ${method?.name} - ${formatCurrency(topupAmount)}`,
-        status: 'completed'
-      });
+      // Add transaction to wallet
+      if (currentUser && wallet) {
+        addTransaction({
+          fromMemberId: currentUser.id,
+          amount: -parseFloat(amount), // Negative karena menambah saldo
+          type: 'topup',
+          category: 'Top Up',
+          description: `Top Up via ${topupMethods.find(m => m.id === selectedMethod)?.name} - ${formatCurrency(parseFloat(amount))}`,
+          status: 'completed'
+        });
 
-      // Update saldo (simulasi)
-      const updatedWallet = {
-        ...wallet,
-        balance: wallet.balance + topupAmount
-      };
-      
-      alert(`Top Up berhasil! Saldo bertambah ${formatCurrency(topupAmount)}`);
-      setShowBarcode(false);
-      onBack();
-    } catch (error) {
-      alert('Top Up gagal. Silakan coba lagi.');
-    } finally {
-      setIsProcessing(false);
+        // Update saldo (simulasi)
+        const updatedWallet = {
+          ...wallet,
+          balance: wallet.balance + parseFloat(amount)
+        };
+      }
+    } else {
+      setPaymentStatus('failed');
     }
   };
 
   const selectedMethodData = topupMethods.find(m => m.id === selectedMethod);
   const finalAmount = amount ? parseFloat(amount) + (selectedMethodData?.fee || 0) : 0;
 
+  // Payment Page
+  if (showPaymentPage) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowPaymentPage(false)}
+                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold">Pembayaran Top Up</h1>
+                <p className="text-blue-100">ID: {transactionId}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {paymentStatus === 'pending' && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <Clock className="text-blue-600" size={32} />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Menunggu Pembayaran</h3>
+                  <p className="text-gray-600">Scan QR code atau gunakan data barcode untuk pembayaran</p>
+                </div>
+
+                {/* QR Code Display */}
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-300 mb-4">
+                    <QrCode className="mx-auto text-gray-400 mb-4" size={120} />
+                    <p className="text-sm text-gray-500 text-center">QR Code untuk Pembayaran</p>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-xs text-gray-500 mb-1">Barcode Data:</p>
+                    <p className="font-mono text-xs break-all text-gray-700 mb-2">
+                      {barcodeData.substring(0, 60)}...
+                    </p>
+                    <button
+                      onClick={copyBarcodeData}
+                      className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-xs mx-auto"
+                    >
+                      {copied ? <CheckCircle size={12} /> : <Copy size={12} />}
+                      <span>{copied ? 'Copied!' : 'Copy Data'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Payment Details */}
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Metode:</span>
+                      <span className="font-medium">{selectedMethodData?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Jumlah Top Up:</span>
+                      <span className="font-medium">{formatCurrency(parseFloat(amount))}</span>
+                    </div>
+                    {selectedMethodData?.fee && selectedMethodData.fee > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Biaya Admin:</span>
+                        <span className="font-medium">{formatCurrency(selectedMethodData.fee)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Total Bayar:</span>
+                      <span className="font-bold text-blue-600">{formatCurrency(finalAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={simulatePayment}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Simulasi Pembayaran Berhasil
+                </button>
+              </div>
+            )}
+
+            {paymentStatus === 'success' && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle className="text-green-600" size={32} />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-green-900 mb-2">Pembayaran Berhasil!</h3>
+                  <p className="text-gray-600">Top up telah berhasil diproses</p>
+                </div>
+
+                {/* Receipt */}
+                <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  <div className="flex items-center justify-center mb-4">
+                    <Receipt className="text-gray-600" size={24} />
+                    <span className="ml-2 font-bold text-gray-900">STRUK PEMBAYARAN</span>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>ID Transaksi:</span>
+                      <span className="font-mono">{transactionId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tanggal:</span>
+                      <span>{new Date().toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Metode:</span>
+                      <span>{selectedMethodData?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Jumlah:</span>
+                      <span>{formatCurrency(parseFloat(amount))}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 font-bold">
+                      <span>Status:</span>
+                      <span className="text-green-600">BERHASIL ✓</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onBack}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            )}
+
+            {paymentStatus === 'failed' && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-red-600 text-2xl">✗</span>
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-red-900 mb-2">Pembayaran Gagal</h3>
+                  <p className="text-gray-600">Terjadi kesalahan saat memproses pembayaran</p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setPaymentStatus('pending')}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Coba Lagi
+                  </button>
+                  <button
+                    onClick={onBack}
+                    className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-colors"
+                  >
+                    Kembali
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main Top Up Form
   return (
     <div className="max-w-2xl mx-auto p-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -159,88 +389,6 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
             </p>
           </div>
         </div>
-
-        {/* Barcode Modal */}
-        {showBarcode && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <QrCode className="text-green-600" size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Barcode Top Up</h3>
-                <p className="text-gray-600 text-sm">
-                  Gunakan barcode ini untuk top up via {selectedMethodData?.name}
-                </p>
-              </div>
-
-              {/* Barcode Display */}
-              <div className="bg-gray-100 rounded-lg p-6 mb-4">
-                <div className="text-center">
-                  <div className="bg-white p-4 rounded-lg mb-4 border-2 border-dashed border-gray-300">
-                    <QrCode className="mx-auto text-gray-400" size={80} />
-                    <p className="text-xs text-gray-500 mt-2">QR Code</p>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-3 border">
-                    <p className="text-xs text-gray-500 mb-1">Barcode Data:</p>
-                    <p className="font-mono text-xs break-all text-gray-700">
-                      {barcodeData.substring(0, 50)}...
-                    </p>
-                    <button
-                      onClick={copyBarcodeData}
-                      className="mt-2 flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-xs mx-auto"
-                    >
-                      {copied ? <CheckCircle size={12} /> : <Copy size={12} />}
-                      <span>{copied ? 'Copied!' : 'Copy'}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Amount Info */}
-              <div className="bg-green-50 rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Jumlah Top Up:</span>
-                  <span className="font-semibold">{formatCurrency(parseFloat(amount))}</span>
-                </div>
-                {selectedMethodData?.fee && selectedMethodData.fee > 0 && (
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">Biaya Admin:</span>
-                    <span className="text-sm">{formatCurrency(selectedMethodData.fee)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span className="font-medium">Total Bayar:</span>
-                  <span className="font-bold text-green-600">{formatCurrency(finalAmount)}</span>
-                </div>
-              </div>
-
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleTopUp}
-                  disabled={isProcessing}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Memproses...</span>
-                    </>
-                  ) : (
-                    <span>Konfirmasi Top Up</span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setShowBarcode(false)}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Batal
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Top Up Form */}
         <div className="p-6 space-y-6">
@@ -291,26 +439,22 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Pilih Metode Top Up
             </label>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {topupMethods.map((method) => {
                 const Icon = method.icon;
                 return (
                   <button
                     key={method.id}
                     onClick={() => handleMethodSelect(method.id)}
-                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
                       selectedMethod === method.id
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 hover:border-green-300'
                     }`}
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-2 rounded-lg ${
-                        selectedMethod === method.id ? 'bg-green-100' : 'bg-gray-100'
-                      }`}>
-                        <Icon className={
-                          selectedMethod === method.id ? 'text-green-600' : 'text-gray-600'
-                        } size={20} />
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${method.color}`}>
+                        <Icon size={20} />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{method.name}</h3>
@@ -363,16 +507,12 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({ onBack }) => {
           )}
 
           <button
-            onClick={() => {
-              if (amount && selectedMethod) {
-                generateBarcode(selectedMethod, parseFloat(amount));
-              }
-            }}
+            onClick={handleGeneratePayment}
             disabled={!amount || !selectedMethod || parseFloat(amount) < 10000}
             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <QrCode size={20} />
-            <span>Generate Barcode Top Up</span>
+            <span>Lanjutkan Pembayaran</span>
           </button>
         </div>
       </div>

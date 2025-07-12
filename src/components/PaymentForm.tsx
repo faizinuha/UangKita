@@ -92,8 +92,8 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
     const currentMember = wallet.members.find(m => m.id === currentUser.id);
     if (!currentMember) return;
 
-    // Check limits for payment mode
-    if (!isTransferMode) {
+    // Check limits for payment mode (only for non-admin members)
+    if (!isTransferMode && currentMember.role !== 'admin') {
       if (currentMember.currentDailySpent + paymentAmount > currentMember.dailyLimit) {
         alert('Pembayaran melebihi limit harian Anda!');
         return;

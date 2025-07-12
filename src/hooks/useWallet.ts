@@ -88,7 +88,8 @@ export const useWallet = () => {
 
     // Update member spending
     const memberIndex = updatedWallet.members.findIndex(m => m.id === transaction.fromMemberId);
-    if (memberIndex !== -1) {
+    if (memberIndex !== -1 && updatedWallet.members[memberIndex].role !== 'admin') {
+      // Only update spending for non-admin members
       updatedWallet.members[memberIndex].currentDailySpent += transaction.amount;
       updatedWallet.members[memberIndex].currentMonthlySpent += transaction.amount;
     }
