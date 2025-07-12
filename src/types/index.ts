@@ -33,4 +33,23 @@ export interface FamilyWallet {
   members: FamilyMember[];
   transactions: Transaction[];
   createdAt: Date;
+  danaIntegration?: DanaAccount;
+}
+
+export interface DanaAccount {
+  phoneNumber: string;
+  accountName: string;
+  balance: number;
+  isConnected: boolean;
+  lastSync: Date;
+  transactions: DanaTransaction[];
+}
+
+export interface DanaTransaction {
+  id: string;
+  amount: number;
+  type: 'in' | 'out';
+  description: string;
+  timestamp: Date;
+  merchant?: string;
 }

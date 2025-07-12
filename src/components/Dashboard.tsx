@@ -1,8 +1,9 @@
 import React from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { useAuth } from '../hooks/useAuth';
+import { DanaIntegration } from './DanaIntegration';
 import { formatCurrency } from '../utils/formatters';
-import { Wallet, TrendingUp, Users, Settings, Eye, EyeOff } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Settings, Eye, EyeOff, Smartphone, Plus } from 'lucide-react';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -12,6 +13,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { wallet } = useWallet();
   const { currentUser } = useAuth();
   const [showBalance, setShowBalance] = React.useState(true);
+  const [showDanaIntegration, setShowDanaIntegration] = React.useState(false);
 
   if (!wallet || !currentUser) return null;
 
@@ -81,6 +83,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </button>
         </div>
+      </div>
+
+      {/* Dana Integration Card */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Smartphone className="text-blue-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Integrasi Dana</h3>
+              <p className="text-gray-600 text-sm">Sinkronkan dengan akun Dana Anda</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDanaIntegration(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            {wallet?.danaIntegration?.isConnected ? (
+              <>
+                <Eye size={16} />
+                <span>Lihat</span>
+              </>
+            ) : (
+              <>
+                <Plus size={16} />
+                <span>Hubungkan</span>
+              </>
+            )}
+          </button>
+        </div>
+        
+        {wallet?.danaIntegration?.isConnected ? (
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-900 font-medium">Terhubung ke Dana</p>
+                <p className="text-blue-700 text-sm">{wallet.danaIntegration.phoneNumber}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-blue-900 font-bold">{formatCurrency(wallet.danaIntegration.balance)}</p>
+                <p className="text-blue-700 text-xs">Saldo Dana</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <p className="text-gray-600 text-sm">Belum terhubung ke Dana</p>
+            <p className="text-gray-500 text-xs mt-1">Klik "Hubungkan" untuk mulai sinkronisasi</p>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -188,6 +241,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           })}
         </div>
       </div>
+
+      {/* Dana Integration Modal */}
+      {showDanaIntegration && (
+        <DanaIntegration onClose={() => setShowDanaIntegration(false)} />
+      )}
     </div>
   );
 };

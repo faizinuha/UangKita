@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FamilyMember, Transaction, FamilyWallet } from '../types';
+import { FamilyMember, Transaction, FamilyWallet, DanaAccount } from '../types';
 
 export const useWallet = () => {
   const [wallet, setWallet] = useState<FamilyWallet | null>(null);
@@ -130,12 +130,24 @@ export const useWallet = () => {
     saveWallet(updatedWallet);
   };
 
+  const updateDanaIntegration = (danaAccount: DanaAccount | null) => {
+    if (!wallet) return;
+
+    const updatedWallet = {
+      ...wallet,
+      danaIntegration: danaAccount || undefined
+    };
+
+    saveWallet(updatedWallet);
+  };
+
   return {
     wallet,
     isLoading,
     addTransaction,
     updateMemberLimit,
     addMember,
-    saveWallet
+    saveWallet,
+    updateDanaIntegration
   };
 };
