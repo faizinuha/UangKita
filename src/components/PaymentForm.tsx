@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useWallet } from '../hooks/useWallet';
 import { useAuth } from '../hooks/useAuth';
 import { formatCurrency } from '../utils/formatters';
-import { ArrowLeft, Camera, CreditCard, QrCode, X, Users } from 'lucide-react';
+import { ArrowLeft, Camera, CreditCard, QrCode, X, Users, Building, Smartphone, CheckCircle, Receipt, Clock } from 'lucide-react';
 
 interface PaymentFormProps {
   onBack: () => void;
@@ -15,10 +15,14 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Makanan');
+  const [selectedMethod, setSelectedMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [scannedData, setScannedData] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
+  const [showPaymentPage, setShowPaymentPage] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+  const [transactionId, setTransactionId] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -27,12 +31,62 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
     'Hiburan', 'Pendidikan', 'Lainnya'
   ];
 
+  const paymentMethods = [
+    {
+      id: 'uangkita',
+      name: 'Saldo UangKita',
+      icon: CreditCard,
+      description: isTransferMode ? 'Transfer internal' : 'Bayar dengan saldo',
+      fee: 0,
+      color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      id: 'bca',
+      name: 'BCA',
+      icon: Building,
+      description: 'Transfer Bank BCA',
+      fee: 0,
+      color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      id: 'mandiri',
+      name: 'Mandiri',
+      icon: Building,
+      description: 'Transfer Bank Mandiri',
+      fee: 0,
+      color: 'bg-yellow-100 text-yellow-600'
+    },
+    {
+      id: 'dana',
+      name: 'Dana',
+      icon: Smartphone,
+      description: 'Bayar dengan Dana',
+      fee: 0,
+      color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      id: 'ovo',
+      name: 'OVO',
+      icon: Smartphone,
+      description: 'Bayar dengan OVO',
+      fee: 0,
+      color: 'bg-purple-100 text-purple-600'
+    },
+    {
+      id: 'gopay',
+      name: 'GoPay',
+      icon: Smartphone,
+      description: 'Bayar dengan GoPay',
+      fee: 0,
+      color: 'bg-green-100 text-green-600'
+    }
+  ];
+
   const isTransferMode = mode === 'transfer';
   const availableMembers = wallet?.members.filter(m => m.id !== currentUser?.id) || [];
 
   useEffect(() => {
     return () => {
-      // Cleanup camera stream when component unmounts
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -42,7 +96,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } // Use back camera
+        video: { facingMode: 'environment' }
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -63,7 +117,6 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
   };
 
   const simulateQRScan = () => {
-    // Simulasi scan QR code
     const mockQRData = {
       merchant: 'Warung Makan Sederhana',
       amount: '25000',
@@ -77,76 +130,220 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
     stopCamera();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser || !wallet) return;
-
-    const paymentAmount = parseFloat(amount);
-    if (paymentAmount <= 0) return;
-
-    if (isTransferMode && !selectedMember) {
-      alert('Pilih anggota tujuan transfer!');
+  const generatePayment = () => {
+    if (!amount || !selectedMethod || (!isTransferMode && !description) || (isTransferMode && !selectedMember)) {
+      alert('Lengkapi semua data pembayaran!');
       return;
     }
 
-    const currentMember = wallet.members.find(m => m.id === currentUser.id);
-    if (!currentMember) return;
+    const timestamp = Date.now();
+    const txId = `PAY${timestamp}`;
+    setTransactionId(txId);
+    setPaymentStatus('pending');
+    setShowPaymentPage(true);
+  };
 
-    // Check limits for payment mode (only for non-admin members)
-    if (!isTransferMode && currentMember.role !== 'admin') {
-      if (currentMember.currentDailySpent + paymentAmount > currentMember.dailyLimit) {
-        alert('Pembayaran melebihi limit harian Anda!');
-        return;
-      }
-    }
-
-    if (paymentAmount > wallet.balance) {
-      alert('Saldo tidak mencukupi!');
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      if (isTransferMode) {
-        // Transfer to family member
-        addTransaction({
-          fromMemberId: currentUser.id,
-          toMemberId: selectedMember,
-          amount: paymentAmount,
-          type: 'transfer',
-          category: 'Transfer',
-          description: `Transfer ke ${wallet.members.find(m => m.id === selectedMember)?.name}`,
-          status: 'completed'
-        });
-      } else {
-        // Regular payment
-        addTransaction({
-          fromMemberId: currentUser.id,
-          amount: paymentAmount,
-          type: 'expense',
-          category,
-          description,
-          status: 'completed'
-        });
-      }
-
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+  const simulatePayment = async () => {
+    setPaymentStatus('pending');
+    
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const isSuccess = Math.random() > 0.1;
+    
+    if (isSuccess) {
+      setPaymentStatus('success');
       
-      alert(isTransferMode ? 'Transfer berhasil!' : 'Pembayaran berhasil!');
-      onBack();
-    } catch (error) {
-      alert(isTransferMode ? 'Transfer gagal. Silakan coba lagi.' : 'Pembayaran gagal. Silakan coba lagi.');
-    } finally {
-      setIsProcessing(false);
+      if (currentUser && wallet) {
+        if (isTransferMode) {
+          addTransaction({
+            fromMemberId: currentUser.id,
+            toMemberId: selectedMember,
+            amount: parseFloat(amount),
+            type: 'transfer',
+            category: 'Transfer',
+            description: `Transfer ke ${wallet.members.find(m => m.id === selectedMember)?.name}`,
+            status: 'completed'
+          });
+        } else {
+          addTransaction({
+            fromMemberId: currentUser.id,
+            amount: parseFloat(amount),
+            type: 'expense',
+            category,
+            description,
+            status: 'completed'
+          });
+        }
+      }
+    } else {
+      setPaymentStatus('failed');
     }
   };
 
   const currentMember = wallet?.members.find(m => m.id === currentUser?.id);
-  const remainingLimit = currentMember 
+  const remainingLimit = currentMember && currentMember.role !== 'admin'
     ? currentMember.dailyLimit - currentMember.currentDailySpent
-    : 0;
+    : wallet?.balance || 0;
+
+  const selectedMethodData = paymentMethods.find(m => m.id === selectedMethod);
+
+  // Payment Page
+  if (showPaymentPage) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className={`bg-gradient-to-r ${isTransferMode ? 'from-green-500 to-emerald-600' : 'from-blue-500 to-indigo-600'} text-white p-6`}>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowPaymentPage(false)}
+                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold">
+                  {isTransferMode ? 'Transfer' : 'Pembayaran'}
+                </h1>
+                <p className="text-blue-100">ID: {transactionId}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {paymentStatus === 'pending' && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <Clock className="text-blue-600" size={32} />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Menunggu Pembayaran</h3>
+                  <p className="text-gray-600">Konfirmasi pembayaran Anda</p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-300 mb-4">
+                    <QrCode className="mx-auto text-gray-400 mb-4" size={120} />
+                    <p className="text-sm text-gray-500 text-center">QR Code untuk Pembayaran</p>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Metode:</span>
+                      <span className="font-medium">{selectedMethodData?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Jumlah:</span>
+                      <span className="font-medium">{formatCurrency(parseFloat(amount))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Deskripsi:</span>
+                      <span className="font-medium">{description}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Total:</span>
+                      <span className="font-bold text-blue-600">{formatCurrency(parseFloat(amount))}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={simulatePayment}
+                  className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Simulasi Pembayaran Berhasil
+                </button>
+              </div>
+            )}
+
+            {paymentStatus === 'success' && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle className="text-green-600" size={32} />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-green-900 mb-2">Pembayaran Berhasil!</h3>
+                  <p className="text-gray-600">{isTransferMode ? 'Transfer' : 'Pembayaran'} telah berhasil diproses</p>
+                </div>
+
+                <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  <div className="flex items-center justify-center mb-4">
+                    <Receipt className="text-gray-600" size={24} />
+                    <span className="ml-2 font-bold text-gray-900">STRUK PEMBAYARAN</span>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>ID Transaksi:</span>
+                      <span className="font-mono">{transactionId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tanggal:</span>
+                      <span>{new Date().toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Metode:</span>
+                      <span>{selectedMethodData?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Jumlah:</span>
+                      <span>{formatCurrency(parseFloat(amount))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Deskripsi:</span>
+                      <span>{description}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 font-bold">
+                      <span>Status:</span>
+                      <span className="text-green-600">BERHASIL ✓</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onBack}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  Kembali ke Dashboard
+                </button>
+              </div>
+            )}
+
+            {paymentStatus === 'failed' && (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                  <span className="text-red-600 text-2xl">✗</span>
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-red-900 mb-2">Pembayaran Gagal</h3>
+                  <p className="text-gray-600">Terjadi kesalahan saat memproses pembayaran</p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setPaymentStatus('pending')}
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Coba Lagi
+                  </button>
+                  <button
+                    onClick={onBack}
+                    className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-400 transition-colors"
+                  >
+                    Kembali
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -180,14 +377,14 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
                 {formatCurrency(wallet?.balance || 0)}
               </p>
             </div>
-            {!isTransferMode && (
-              <div className="text-center">
-                <p className="text-sm text-gray-600">Limit Harian Tersisa</p>
-                <p className="text-xl font-bold text-green-600">
-                  {formatCurrency(remainingLimit)}
-                </p>
-              </div>
-            )}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                {currentMember?.role === 'admin' ? 'Status' : 'Limit Tersisa'}
+              </p>
+              <p className="text-xl font-bold text-green-600">
+                {currentMember?.role === 'admin' ? '👑 Admin' : formatCurrency(remainingLimit)}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -232,7 +429,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
         )}
 
         {/* Payment Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={(e) => { e.preventDefault(); generatePayment(); }} className="p-6 space-y-6">
           {/* QR Scanner Button (only for payment mode) */}
           {!isTransferMode && (
             <div className="grid grid-cols-2 gap-3">
@@ -296,7 +493,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-lg"
                 placeholder="0"
                 min="0"
-                max={isTransferMode ? wallet?.balance : Math.min(wallet?.balance || 0, remainingLimit)}
+                max={wallet?.balance}
                 required
               />
             </div>
@@ -338,37 +535,48 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Metode {isTransferMode ? 'Transfer' : 'Pembayaran'}
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="border border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors">
-                <div className="flex items-center space-x-3">
-                  {isTransferMode ? (
-                    <Users className="text-green-600" size={20} />
-                  ) : (
-                    <CreditCard className="text-blue-600" size={20} />
-                  )}
-                  <div>
-                    <p className="font-medium">Saldo UangKita</p>
-                    <p className="text-sm text-gray-500">
-                      {isTransferMode ? 'Transfer internal' : 'Bayar dengan saldo'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="border border-gray-200 rounded-lg p-4 opacity-50 cursor-not-allowed">
-                <div className="flex items-center space-x-3">
-                  <div className="w-5 h-5 bg-gray-400 rounded"></div>
-                  <div>
-                    <p className="font-medium text-gray-400">Dana/E-Wallet</p>
-                    <p className="text-sm text-gray-400">Segera hadir</p>
-                  </div>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {paymentMethods.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => setSelectedMethod(method.id)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      selectedMethod === method.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${method.color}`}>
+                        <Icon size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{method.name}</h3>
+                        <p className="text-sm text-gray-500">{method.description}</p>
+                        {method.fee > 0 && (
+                          <p className="text-xs text-orange-600">
+                            Biaya admin: {formatCurrency(method.fee)}
+                          </p>
+                        )}
+                      </div>
+                      {selectedMethod === method.id && (
+                        <div className="text-blue-600">
+                          <CheckCircle size={20} />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={isProcessing || !amount || (!isTransferMode && !description) || (isTransferMode && !selectedMember)}
+            disabled={isProcessing || !amount || !selectedMethod || (!isTransferMode && !description) || (isTransferMode && !selectedMember)}
             className={`w-full bg-gradient-to-r ${isTransferMode ? 'from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700' : 'from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'} text-white py-4 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2`}
           >
             {isProcessing ? (
@@ -380,7 +588,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
               <>
                 {isTransferMode ? <Users size={20} /> : <CreditCard size={20} />}
                 <span>
-                  {isTransferMode ? 'Transfer' : 'Bayar'} {amount && formatCurrency(parseFloat(amount))}
+                  Lanjutkan {isTransferMode ? 'Transfer' : 'Pembayaran'} {amount && formatCurrency(parseFloat(amount))}
                 </span>
               </>
             )}
