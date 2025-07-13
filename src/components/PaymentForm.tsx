@@ -26,6 +26,8 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const isTransferMode = mode === 'transfer';
+
   const categories = [
     'Makanan', 'Transportasi', 'Belanja', 'Kesehatan', 
     'Hiburan', 'Pendidikan', 'Lainnya'
@@ -82,7 +84,6 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ onBack, mode = 'paymen
     }
   ];
 
-  const isTransferMode = mode === 'transfer';
   const availableMembers = wallet?.members.filter(m => m.id !== currentUser?.id) || [];
 
   useEffect(() => {
