@@ -35,21 +35,31 @@ export const useSupabaseWallet = () => {
       const { data: memberData, error: memberError } = await supabase
         .from('family_members')
         .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
 
       if (memberError) {
         console.error('Error loading member:', memberError);
         return;
       }
 
+      // Check if user has a family member record
+      if (!memberData || memberData.length === 0) {
+        setCurrentMember(null);
+        setWallet(null);
+        setMembers([]);
+        setTransactions([]);
+        setDanaIntegration(null);
+        return;
+      }
+
+      const currentMemberData = memberData[0];
       setCurrentMember(memberData);
 
       // Get wallet
       const { data: walletData, error: walletError } = await supabase
         .from('family_wallets')
         .select('*')
-        .eq('id', memberData.wallet_id)
+        .eq('id', currentMemberData.wallet_id)
         .single();
 
       if (walletError) {
@@ -63,7 +73,7 @@ export const useSupabaseWallet = () => {
       const { data: membersData, error: membersError } = await supabase
         .from('family_members')
         .select('*')
-        .eq('wallet_id', memberData.wallet_id)
+        .eq('wallet_id', currentMemberData.wallet_id)
         .order('created_at');
 
       if (membersError) {
@@ -76,7 +86,7 @@ export const useSupabaseWallet = () => {
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
-        .eq('wallet_id', memberData.wallet_id)
+        .eq('wallet_id', currentMemberData.wallet_id)
         .order('created_at', { ascending: false });
 
       if (transactionsError) {
@@ -89,7 +99,7 @@ export const useSupabaseWallet = () => {
       const { data: danaData, error: danaError } = await supabase
         .from('dana_integrations')
         .select('*')
-        .eq('wallet_id', memberData.wallet_id)
+        .eq('wallet_id', currentMemberData.wallet_id)
         .single();
 
       if (!danaError && danaData) {
